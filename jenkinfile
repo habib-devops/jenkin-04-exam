@@ -2,45 +2,38 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'BUILD_VERSION', description: 'Docker image tag version')
+        string(name: 'BUILD_VERSION', defaultValue: 'latest', description: 'Docker image tag version')
     }
 
     environment {
-        // Use Jenkins Credentials Binding for Docker Hub (set these in Jenkins > Credentials)
-        DOCKER_CREDENTIALS = credentials('docker-hub-credentials') // This is the ID of your DockerHub credentials
-        DOCKER_IMAGE = 'your-dockerhub-username/demo-app' // Replace with your actual repo
-        GIT_REPO = 'https://github.com/your-username/demo-repo.git' // Replace with your repo
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
+        DOCKER_IMAGE = 'habib356/demo-app'
+        GIT_REPO = 'https://github.com/habib-devops/jenkin-04-exam'
     }
 
     stages {
-        stage('Print Build Info') {
+        stage('Print Params') {
             steps {
-                echo "BUILD_VERSION: ${params.BUILD_VERSION}"
-                echo "Using Docker Image Tag: ${DOCKER_IMAGE}:${params.BUILD_VERSION}"
+                echo "BUILD_VERSION = ${params.BUILD_VERSION}"
             }
         }
 
-        stage('Checkout Code') {
+        stage('Clone GitHub Repo') {
             steps {
                 git url: "${env.GIT_REPO}", branch: 'main'
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${params.BUILD_VERSION} ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE}:${params.BUILD_VERSION} ."
             }
         }
 
-        stage('Docker Login & Push') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    echo "Logging into Docker Hub..."
                     sh "echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin"
-
-                    echo "Pushing Docker Image..."
                     sh "docker push ${DOCKER_IMAGE}:${params.BUILD_VERSION}"
                 }
             }
@@ -49,10 +42,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully!"
+            echo "✅ Build and Push completed!"
         }
         failure {
-            echo "Pipeline failed."
+            echo "❌ Something went wrong."
         }
     }
 }
